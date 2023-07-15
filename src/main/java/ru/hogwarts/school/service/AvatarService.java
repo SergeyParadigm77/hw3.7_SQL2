@@ -1,9 +1,12 @@
 package ru.hogwarts.school.service;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+import ru.hogwarts.school.dto.AvatarDTO;
 import ru.hogwarts.school.exaption.StudentIsNotFound;
+import ru.hogwarts.school.mapper.AvatarMapper;
 import ru.hogwarts.school.repositories.AvatarRepository;
 import ru.hogwarts.school.repositories.StudentRepository;
 import ru.hogwarts.school.model.Avatar;
@@ -13,6 +16,8 @@ import ru.hogwarts.school.model.Student;
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Collection;
+import java.util.stream.Collectors;
 
 import static java.nio.file.StandardOpenOption.CREATE_NEW;
 
@@ -20,10 +25,12 @@ import static java.nio.file.StandardOpenOption.CREATE_NEW;
 public class AvatarService {
     private final AvatarRepository avatarRepository;
     private final StudentRepository studentRepository;
+    private final AvatarMapper avatarMapper;
 
-    public AvatarService(AvatarRepository avatarRepository, StudentRepository studentRepository) {
+    public AvatarService(AvatarRepository avatarRepository, StudentRepository studentRepository, AvatarMapper avatarMapper) {
         this.avatarRepository = avatarRepository;
         this.studentRepository = studentRepository;
+        this.avatarMapper = avatarMapper;
     }
     @Value("${path.to.avatars.folder}")
     private String avatarsDir;
@@ -68,5 +75,12 @@ public class AvatarService {
     public Avatar findById(Long studentId) {
         Avatar avatar = avatarRepository.findByStudent_Id(studentId);
         return avatar;
+    }
+    public Collection<AvatarDTO> getAvatars(int pageNumber, int pageSize) {
+        PageRequest pageRequest = PageRequest.of(pageNumber-1, pageSize);
+        return avatarRepository.findAll(pageRequest).getContent()
+                .stream()
+                .map(it -> avatarMapper.mapToDTO(it))
+                .collect(Collectors.toList());
     }
  }
